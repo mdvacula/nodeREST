@@ -2,11 +2,42 @@
 
 // Dependecies
 const http = require('http');
+const https = require('https');
 const url = require('url');
 const StringDecoder = require('string_decoder').StringDecoder;
+const config = require('./config');
+const fs = require('fs');
+const handlers = require('./lib/handlers');
 
-//create server
-let server = http.createServer((req, res)=> {
+
+
+//Instantiate the HTTP server
+let httpServer = http.createServer((req, res)=> {   
+    unifiedServer(req,res);
+});
+
+// Start the server
+httpServer.listen(config.httpPort, () =>{
+    console.log(`Server is Listening on ${config.httpPort} in ${config.envName} mode`);
+});
+
+let httpsServerOptions = {
+    'key' : fs.readFileSync('./https/key.pem'),
+    'cert' : fs.readFileSync('./https/cert.pem')
+};
+
+//Instantiate the HTTPS server
+let httpsServer = https.createServer(httpsServerOptions, (req,res) => {
+    unifiedServer(req,res);
+});
+
+httpsServer.listen(config.httpsPort, () => {
+    console.log(`Server is listening on ${config.httpsPort} in ${config.envName} mode`);
+})
+
+//Server Logic
+let unifiedServer = (req,res) => {
+
     // Get parsed Url
     let parsedUrl = url.parse(req.url, true);
     
@@ -66,29 +97,9 @@ let server = http.createServer((req, res)=> {
         });
 
     });
-
-});
-
-// Start the server
-server.listen(3000, () =>{
-    console.log("Server is Listening on port 3000");
-});
-
-// Define Handlers
-let handlers = {};
-
-handlers.sample = (data, callback) =>{
-    //Callback a http status code, and a payload object
-    callback(406, {'name' : 'sample handler'});
-};
-
-//Not found handler
-handlers.notFound = (data, callback) =>{
-    callback(404);
-
 };
 
 
 let router = {
-    'sample' : handlers.sample
+    'ping' : handlers.ping
 }
